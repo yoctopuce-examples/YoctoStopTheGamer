@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
+using System.Configuration.Install;
+using System.Data.Common;
+
 
 namespace YoctoStopTheGamer
 {
@@ -24,25 +28,43 @@ namespace YoctoStopTheGamer
                     Usage(args[0]);
                     Environment.Exit(0);
                 }
+                string exe_location = Assembly.GetExecutingAssembly().Location;
+                string serviceName = "YoctoStopTheGamerService";
+                string serviceDisplayName = "Gamer Compliance Service";
                 switch (args[0]) {
-                    case "install":
+                    case "--install":
                         if (args.Length < 3) {
                             Console.WriteLine("Error: Missing arguments\n");
                             Usage(args[0]);
                             Environment.Exit(1);
                         }
+                        if (WindowsServiceControl.ServiceIsInstalled(serviceName)) {
+                            Console.WriteLine("Service " + serviceName + " is already installed");
+                        } else {
+                            args[0] = "\"" + exe_location + "\"";
+                            string param = String.Join(" ", args);
+                            WindowsServiceControl.InstallAndStart(serviceName, serviceDisplayName, param);
+                            Console.WriteLine(serviceDisplayName + " installed and started");
+                        }
+
                         break;
-                    case "uninstall":
+                    case "--uninstall":
+                        if (!WindowsServiceControl.ServiceIsInstalled(serviceName)) {
+                            Console.WriteLine("Service " + serviceName + " is not installed");
+                        } else {
+                            WindowsServiceControl.Uninstall(serviceName);
+                            Console.WriteLine(serviceDisplayName + " uninstalled");
+                        }
                         break;
-                    case "test":
+                    case "--test":
                         if (args.Length < 3) {
                             Console.WriteLine("Missing arguments");
                             Usage(args[0]);
                             Environment.Exit(1);
                         }
-                        CheckSongService checkSongService = new CheckSongService();
+                        CheckSongService checkSongService = new CheckSongService(args.Skip(1).ToArray());
                         try {
-                            checkSongService.TestStartupAndStop(args.Skip(1).ToArray());
+                            checkSongService.TestStartupAndStop(null);
                         } catch (Exception ex) {
                             Console.WriteLine(ex.ToString());
                         }
@@ -52,7 +74,7 @@ namespace YoctoStopTheGamer
                 ServiceBase[] ServicesToRun;
                 ServicesToRun = new ServiceBase[]
                 {
-                    new CheckSongService()
+                    new CheckSongService(args)
                 };
                 ServiceBase.Run(ServicesToRun);
             }
@@ -69,9 +91,9 @@ namespace YoctoStopTheGamer
                 Console.WriteLine("  <HwId> : the HardwareID or logical name of the button to use");
             } else {
                 Console.WriteLine("Usage:");
-                Console.WriteLine(execname + " install <URL> <HwId> [Opt] : Install the service");
-                Console.WriteLine(execname + " uninstall                  : Uninstall the service");
-                Console.WriteLine(execname + " test <URL> <HwId> [Opt]    : Test service without installing it");
+                Console.WriteLine(execname + " --install <URL> <HwId> [Opt] : Install the service");
+                Console.WriteLine(execname + " --uninstall                  : Uninstall the service");
+                Console.WriteLine(execname + " --test <URL> <HwId> [Opt]    : Test service without installing it");
             }
             Console.WriteLine("Options:");
             Console.WriteLine("  --msg <value>    : The message to read if the button is pressed");

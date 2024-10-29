@@ -22,39 +22,55 @@ namespace YoctoStopTheGamer
         private string _hwid;
         private string _url;
         private YAnButton _button;
+        private string _locale;
 
-        public CheckSongService()
+        public CheckSongService(string[]  args)
         {
             InitializeComponent();
-        }
+            EventLog.WriteEntry("YoctoStopTheGamer", "Started motherfucker!", EventLogEntryType.Warning);
+            for (int i = 0; i < args.Length; i++)
+            {
+                string msg = "arg" + i + ":" + args[i];
+                Console.WriteLine(msg);
+                EventLog.WriteEntry("YoctoStopTheGamer", msg, EventLogEntryType.Warning);
 
-        protected override void OnStart(string[] args)
-        {
+            }
             _message = "Stop playing";
-            string locale = "";
-            if (args.Length < 2) {
+            _locale = "";
+            if (args.Length < 2)
+            {
                 FatalError("Missing URL and button HardwareID");
             }
             _url = args[0];
             _hwid = args[1];
-            for (int i = 2; i < args.Length; i++) {
-                if (args[i] == "--msg") {
-                    if (i + 1 >= args.Length) {
+            for (int i = 2; i < args.Length; i++)
+            {
+                if (args[i] == "--msg")
+                {
+                    if (i + 1 >= args.Length)
+                    {
                         FatalError("Missing message after --msg");
                     }
                     _message = args[i + 1];
-                } else if (args[i] == "--locale") {
-                    if (i + 1 >= args.Length) {
+                } else if (args[i] == "--locale")
+                {
+                    if (i + 1 >= args.Length)
+                    {
                         FatalError("Missing local after --locale");
                     }
-                    locale = args[i + 1];
+                    _locale = args[i + 1];
                 }
             }
+        }
+
+        protected override void OnStart(string[] args)
+        {
+         
             Console.WriteLine("Yoctopuce Lib version is :" + YAPI.GetAPIVersion());
             Console.WriteLine("Hub URL :" + _url);
             Console.WriteLine("Button  :" + _hwid);
             Console.WriteLine("Message :" + _message);
-            Console.WriteLine("Locale  :" + locale);
+            Console.WriteLine("Locale  :" + _locale);
             // Register the connection to the YoctoHub
             string errmsg = "";
             if (YAPI.PreregisterHub(_url, ref errmsg) != YAPI.SUCCESS) {
@@ -65,7 +81,7 @@ namespace YoctoStopTheGamer
 
             // Configure Text2Speech
             _synth = new SpeechSynthesizer();
-            if (locale != "") {
+            if (_locale != "") {
                 var readOnlyCollection = _synth.GetInstalledVoices();
                 foreach (var voice in readOnlyCollection) {
                     var info = voice.VoiceInfo;
