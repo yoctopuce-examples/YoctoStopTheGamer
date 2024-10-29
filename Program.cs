@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Configuration.Install;
 using System.Data.Common;
+using System.Security.Principal;
 
 
 namespace YoctoStopTheGamer
@@ -38,23 +39,37 @@ namespace YoctoStopTheGamer
                             Usage(args[0]);
                             Environment.Exit(1);
                         }
-                        if (WindowsServiceControl.ServiceIsInstalled(serviceName)) {
-                            Console.WriteLine("Service " + serviceName + " is already installed");
-                        } else {
-                            args[0] = "\"" + exe_location + "\"";
-                            string param = String.Join(" ", args);
-                            WindowsServiceControl.InstallAndStart(serviceName, serviceDisplayName, param);
-                            Console.WriteLine(serviceDisplayName + " installed and started");
+                        CheckAdmin();
+                        try {
+                            if (WindowsServiceControl.ServiceIsInstalled(serviceName)) {
+                                Console.WriteLine("Service " + serviceName + " is already installed");
+                            } else {
+                                args[0] = "\"" + exe_location + "\"";
+                                string param = String.Join(" ", args);
+                                WindowsServiceControl.InstallAndStart(serviceName, serviceDisplayName, param);
+                                Console.WriteLine(serviceDisplayName + " installed and started");
+                            }
+                        } catch (Exception ex) {
+                            Console.WriteLine("Error:" + ex.Message);
+                            Environment.Exit(1);
                         }
 
                         break;
                     case "--uninstall":
-                        if (!WindowsServiceControl.ServiceIsInstalled(serviceName)) {
-                            Console.WriteLine("Service " + serviceName + " is not installed");
-                        } else {
-                            WindowsServiceControl.Uninstall(serviceName);
-                            Console.WriteLine(serviceDisplayName + " uninstalled");
+                        CheckAdmin();
+                        try
+                        {
+                            if (!WindowsServiceControl.ServiceIsInstalled(serviceName)) {
+                                Console.WriteLine("Service " + serviceName + " is not installed");
+                            } else {
+                                WindowsServiceControl.Uninstall(serviceName);
+                                Console.WriteLine(serviceDisplayName + " uninstalled");
+                            }
+                        } catch (Exception ex) {
+                            Console.WriteLine("Error:" + ex.Message);
+                            Environment.Exit(1);
                         }
+
                         break;
                     case "--test":
                         if (args.Length < 3) {
@@ -79,6 +94,26 @@ namespace YoctoStopTheGamer
                 ServiceBase.Run(ServicesToRun);
             }
         }
+
+        private static void CheckAdmin()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            if (!principal.IsInRole(WindowsBuiltInRole.Administrator)) {
+                Console.WriteLine("Error: Access Denied");
+                Console.WriteLine("The application does not have the necessary permissions to perform this action. Please run the application as an administrator.");
+                Environment.Exit(1);
+            }
+
+        }
+
+        private static bool IsAdministrator()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
 
         private static void Usage(string cmd)
         {
