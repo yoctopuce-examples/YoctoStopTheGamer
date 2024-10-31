@@ -24,53 +24,24 @@ namespace YoctoStopTheGamer
         private YAnButton _button;
         private string _locale;
 
-        public CheckSongService(string[]  args)
+        public CheckSongService(string url, string hwid, string message, string locale)
         {
             InitializeComponent();
-            EventLog.WriteEntry("YoctoStopTheGamer", "Started motherfucker!", EventLogEntryType.Warning);
-            for (int i = 0; i < args.Length; i++)
-            {
-                string msg = "arg" + i + ":" + args[i];
-                Console.WriteLine(msg);
-                EventLog.WriteEntry("YoctoStopTheGamer", msg, EventLogEntryType.Warning);
-
-            }
-            _message = "Stop playing";
-            _locale = "";
-            if (args.Length < 2)
-            {
-                FatalError("Missing URL and button HardwareID");
-            }
-            _url = args[0];
-            _hwid = args[1];
-            for (int i = 2; i < args.Length; i++)
-            {
-                if (args[i] == "--msg")
-                {
-                    if (i + 1 >= args.Length)
-                    {
-                        FatalError("Missing message after --msg");
-                    }
-                    _message = args[i + 1];
-                } else if (args[i] == "--locale")
-                {
-                    if (i + 1 >= args.Length)
-                    {
-                        FatalError("Missing local after --locale");
-                    }
-                    _locale = args[i + 1];
-                }
-            }
+            _message = message;
+            _locale = locale;
+            _hwid = hwid;
+            _url = url;
         }
 
         protected override void OnStart(string[] args)
         {
-         
             Console.WriteLine("Yoctopuce Lib version is :" + YAPI.GetAPIVersion());
-            Console.WriteLine("Hub URL :" + _url);
-            Console.WriteLine("Button  :" + _hwid);
-            Console.WriteLine("Message :" + _message);
-            Console.WriteLine("Locale  :" + _locale);
+            Console.WriteLine("Hub URL : " + _url);
+            Console.WriteLine("Button  : " + _hwid);
+            Console.WriteLine("Message : " + _message);
+            if (_locale != "") {
+                Console.WriteLine("Locale  : " + _locale);
+            }
             // Register the connection to the YoctoHub
             string errmsg = "";
             if (YAPI.PreregisterHub(_url, ref errmsg) != YAPI.SUCCESS) {
@@ -92,10 +63,10 @@ namespace YoctoStopTheGamer
                 }
             }
             Console.WriteLine("Selected voice:" + _synth.Voice.Name + " (lang=" + _synth.Voice.Culture + ")");
-            _timer = new Timer(CheckApi, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+            _timer = new Timer(CheckButton, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
         }
 
-        private void CheckApi(object state)
+        private void CheckButton(object state)
         {
             if (_button.isOnline()) {
                 int isPressed = _button.get_isPressed();
@@ -106,13 +77,13 @@ namespace YoctoStopTheGamer
             } else {
                 string msg = "button \"" + _hwid + "\" is offline. Check arguments and connections";
                 Console.WriteLine(msg);
-                EventLog.WriteEntry("CheckSongService", msg, EventLogEntryType.Error);
+                EventLog.WriteEntry("YoctoStopTheGamerService", msg, EventLogEntryType.Error);
             }
         }
 
         private static void FatalError(string errorMessage)
         {
-            EventLog.WriteEntry("YoctoStopTheGamer", errorMessage, EventLogEntryType.Error);
+            EventLog.WriteEntry("YoctoStopTheGamerService", errorMessage, EventLogEntryType.Error);
             throw new ApplicationException("Missing arguments");
         }
 
