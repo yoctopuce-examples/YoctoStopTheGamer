@@ -52,6 +52,7 @@ namespace YoctoStopTheGamer
 
             // Configure Text2Speech
             _synth = new SpeechSynthesizer();
+            _synth.Volume = 100;
             if (_locale != "") {
                 var readOnlyCollection = _synth.GetInstalledVoices();
                 foreach (var voice in readOnlyCollection) {
