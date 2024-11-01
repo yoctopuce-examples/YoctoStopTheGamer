@@ -1,7 +1,7 @@
 # YoctoStopTheGamer
 
 A Windows service that watch the state of a remote button connected on a Yoctopuce device and play a message if the button is pressed.
-Read our full article on our web site:
+Read our full article on our web site: https://www.yoctopuce.com/EN/article/dinner-is-ready
 
 ## Usage
 
